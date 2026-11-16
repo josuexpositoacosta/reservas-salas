@@ -11,7 +11,7 @@ Hecha con **Java 17 y Spring Boot 4**.
 - 🔎 Listado de reservas con filtros por sala, fecha y estado, y paginación.
 - 🗄️ H2 para arrancar sin instalar nada y PostgreSQL para lo serio, con el esquema gestionado por **Flyway**.
 - 🔐 **JWT**: para crear o cancelar hace falta token; para consultar, no.
-- 🧪 12 tests, incluido uno que lanza 10 reservas simultáneas al mismo hueco.
+- 🧪 13 tests, incluido uno que lanza 10 reservas simultáneas al mismo hueco.
 
 ---
 
@@ -27,21 +27,29 @@ Solo necesitas **Java 17 o superior**. Maven no hace falta, porque el proyecto t
 ### ¿Prefieres PostgreSQL?
 
 ```bash
-docker compose up -d                                        # levanta PostgreSQL 17
-./mvnw spring-boot:run -Dspring-boot.run.profiles=postgres
+docker compose up -d                                            # levanta PostgreSQL 17
+./mvnw spring-boot:run -Dspring-boot.run.profiles=dev,postgres  # en local, con las credenciales de desarrollo
 ```
 
 Para apuntar a otra base de datos, usa `DB_URL`, `DB_USER` y `DB_PASSWORD`.
 
 ### Credenciales
 
-Los valores por defecto están pensados **solo para desarrollo**. En cualquier otro entorno, cámbialos con variables de entorno:
+Si no indicas ningún perfil, se activa **`dev`**: credenciales de prueba y consola de H2 en `/h2-console`, para arrancar sin configurar nada.
 
-| Variable | Por defecto | Para qué sirve |
+Con cualquier otro perfil (`postgres`, `prod`…) **no hay valores por defecto**: si falta alguna variable, la aplicación se niega a arrancar y te dice cuál falta. Así es imposible desplegar por despiste con un secreto que está publicado en el repositorio.
+
+| Variable | En `dev` | Para qué sirve |
 |---|---|---|
 | `APP_USUARIO` | `admin` | Usuario para pedir el token |
 | `APP_CLAVE` | `admin123` | Su contraseña |
-| `APP_JWT_SECRETO` | clave de desarrollo | Firma de los tokens. Si tiene menos de 32 caracteres, la aplicación se niega a arrancar. |
+| `APP_JWT_SECRETO` | clave de desarrollo | Firma de los tokens (mínimo 32 caracteres) |
+
+```bash
+# Ejemplo de arranque "de verdad"
+export APP_USUARIO=ops APP_CLAVE='...' APP_JWT_SECRETO="$(openssl rand -base64 48)"
+java -jar target/reservas-salas-0.0.1-SNAPSHOT.jar --spring.profiles.active=postgres
+```
 
 ---
 
@@ -183,10 +191,10 @@ Con todo funcionando y los tests en verde, no lo di por bueno. Le pedí tres rev
 
 | Gravedad | Qué pasa | Qué haría |
 |---|---|---|
-| 🔴 Alta | El secreto JWT y las credenciales tienen valores por defecto. Si alguien despliega sin configurar nada, cualquiera podría fabricar tokens válidos. | Valores por defecto solo en desarrollo; en producción, que no arranque sin las variables. |
+| 🔴 Alta | El secreto JWT y las credenciales tenían valores por defecto. Si alguien desplegaba sin configurar nada, cualquiera podría fabricar tokens válidos. | ✅ **Corregido.** Los valores por defecto viven solo en el perfil `dev`; con cualquier otro perfil la aplicación no arranca sin las variables. Lo comprueba `ConfiguracionSeguraTest`. |
 | 🔴 Alta | La restricción `EXCLUDE` de PostgreSQL no la prueba ningún test, porque todos se ejecutan en H2. | Test con Testcontainers sobre PostgreSQL real. |
 | 🟠 Media | El login no limita los intentos fallidos. | *Rate limiting* por IP y usuario. |
-| 🟠 Media | La consola de H2 queda abierta en el perfil por defecto. | Activarla solo con un perfil `dev` explícito. |
+| 🟠 Media | La consola de H2 quedaba abierta siempre que se usara H2. | ✅ **Corregido** con el mismo cambio: solo se activa en `dev`. |
 | 🟡 Baja | Los tests usan fechas de 2030 y exigen fechas futuras: en 2030 empezarán a fallar. | Calcular las fechas a partir de hoy. |
 | 🟡 Baja | «Azul» y «azul» enviadas a la vez podrían colarse como dos salas distintas: el código compara sin mayúsculas y la base de datos no. | Índice único sobre `lower(nombre)`. |
 | 🟡 Baja | El token se valida por firma y caducidad, pero no por emisor. | Validar también el emisor (`iss`). |
