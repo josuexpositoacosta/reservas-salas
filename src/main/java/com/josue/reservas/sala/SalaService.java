@@ -5,6 +5,7 @@ import com.josue.reservas.comun.RecursoNoEncontradoException;
 import java.util.List;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
@@ -34,9 +35,17 @@ public class SalaService {
         return SalaResponse.de(buscar(id));
     }
 
-    /** Para otros servicios (reservas) que necesitan la entidad. */
     public Sala buscar(Long id) {
-        return salas.findById(id)
-                .orElseThrow(() -> new RecursoNoEncontradoException("No existe la sala con id " + id));
+        return salas.findById(id).orElseThrow(() -> salaNoEncontrada(id));
+    }
+
+    /** Devuelve la sala bloqueada hasta el final de la transacción en curso (ver SalaRepository). */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public Sala buscarParaReservar(Long id) {
+        return salas.buscarParaReservar(id).orElseThrow(() -> salaNoEncontrada(id));
+    }
+
+    private static RecursoNoEncontradoException salaNoEncontrada(Long id) {
+        return new RecursoNoEncontradoException("No existe la sala con id " + id);
     }
 }

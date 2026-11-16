@@ -2,6 +2,7 @@ package com.josue.reservas.comun;
 
 import java.util.List;
 import java.util.Map;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
@@ -63,6 +64,19 @@ public class ManejadorErrores extends ResponseEntityExceptionHandler {
     @ExceptionHandler(ConflictoException.class)
     ProblemDetail conflicto(ConflictoException ex) {
         return problema(HttpStatus.CONFLICT, "Conflicto", ex.getMessage());
+    }
+
+    /**
+     * Última línea de defensa: si la base de datos rechaza la escritura (p. ej. la restricción de
+     * exclusión de PostgreSQL ante un solapamiento), respondemos 409 sin filtrar detalles internos.
+     */
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    ProblemDetail integridad(DataIntegrityViolationException ex) {
+        String causa = String.valueOf(ex.getMostSpecificCause().getMessage());
+        String detalle = causa.contains("ex_reservas_sin_solapamiento")
+                ? "La sala ya está reservada en ese horario"
+                : "La operación entra en conflicto con datos existentes";
+        return problema(HttpStatus.CONFLICT, "Conflicto", detalle);
     }
 
     private static ProblemDetail problema(HttpStatus estado, String titulo, String detalle) {

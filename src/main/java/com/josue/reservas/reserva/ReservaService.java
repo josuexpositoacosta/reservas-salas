@@ -33,7 +33,11 @@ public class ReservaService {
         if (Duration.between(datos.inicio(), datos.fin()).compareTo(DURACION_MAXIMA) > 0) {
             throw new DatosInvalidosException("fin", "una reserva no puede durar más de " + DURACION_MAXIMA.toHours() + " horas");
         }
-        Sala sala = salas.buscar(datos.salaId());
+        Sala sala = salas.buscarParaReservar(datos.salaId());
+        if (reservas.salaOcupada(sala.getId(), datos.inicio(), datos.fin())) {
+            throw new ConflictoException("La sala '" + sala.getNombre() + "' ya está reservada entre "
+                    + datos.inicio() + " y " + datos.fin());
+        }
         Reserva reserva = new Reserva(sala, datos.responsable().trim(), datos.inicio(), datos.fin());
         return ReservaResponse.de(reservas.save(reserva));
     }
