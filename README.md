@@ -4,6 +4,8 @@ Una API para reservar salas de reuniones sin pisarse. Si alguien ya tiene la sal
 
 Hecha con **Java 17 y Spring Boot 4**.
 
+> 📘 ¿Quieres ver cómo funciona por dentro (diagramas, modelo de datos, concurrencia paso a paso, catálogo de errores)? Está todo en la [documentación técnica](docs/DOCUMENTACION.md).
+
 **De un vistazo:**
 
 - ✅ Crear y listar salas. Crear, listar y cancelar reservas.
