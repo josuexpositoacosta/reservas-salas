@@ -9,6 +9,7 @@ import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -54,6 +55,12 @@ public class ManejadorErrores extends ResponseEntityExceptionHandler {
         ProblemDetail problema = problema(HttpStatus.BAD_REQUEST, "Datos inválidos", "La petición tiene campos con errores");
         problema.setProperty("errores", List.of(Map.of("campo", ex.getCampo(), "mensaje", ex.getMessage())));
         return problema;
+    }
+
+    /** Mismo mensaje para usuario inexistente y clave incorrecta: no revelamos qué usuarios existen. */
+    @ExceptionHandler(AuthenticationException.class)
+    ProblemDetail noAutenticado(AuthenticationException ex) {
+        return problema(HttpStatus.UNAUTHORIZED, "No autenticado", "Usuario o contraseña incorrectos");
     }
 
     @ExceptionHandler(RecursoNoEncontradoException.class)
