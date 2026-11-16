@@ -2,12 +2,14 @@ package com.josue.reservas.reserva;
 
 import com.josue.reservas.comun.ConflictoException;
 import com.josue.reservas.comun.DatosInvalidosException;
+import com.josue.reservas.comun.PaginaResponse;
 import com.josue.reservas.comun.RecursoNoEncontradoException;
 import com.josue.reservas.sala.Sala;
 import com.josue.reservas.sala.SalaService;
 import java.time.Duration;
-import java.util.List;
-import org.springframework.data.domain.Sort;
+import java.util.Set;
+import java.util.TreeSet;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,8 +44,17 @@ public class ReservaService {
         return ReservaResponse.de(reservas.save(reserva));
     }
 
-    public List<ReservaResponse> listar() {
-        return reservas.findAll(Sort.by("inicio")).stream().map(ReservaResponse::de).toList();
+    /** Campos por los que se puede ordenar; cualquier otro es un 400, no un 500. */
+    static final Set<String> CAMPOS_ORDENABLES = Set.of("id", "inicio", "fin", "responsable", "estado");
+
+    public PaginaResponse<ReservaResponse> listar(FiltroReservas filtro, Pageable pagina) {
+        pagina.getSort().forEach(orden -> {
+            if (!CAMPOS_ORDENABLES.contains(orden.getProperty())) {
+                throw new DatosInvalidosException("sort", "no se puede ordenar por '" + orden.getProperty()
+                        + "'; valores permitidos: " + new TreeSet<>(CAMPOS_ORDENABLES));
+            }
+        });
+        return PaginaResponse.de(reservas.findAll(filtro.aEspecificacion(), pagina), ReservaResponse::de);
     }
 
     public ReservaResponse obtener(Long id) {
