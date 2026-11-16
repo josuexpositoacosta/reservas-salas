@@ -13,7 +13,8 @@ Hecha con **Java 17 y Spring Boot 4**.
 - 🔎 Listado de reservas con filtros por sala, fecha y estado, y paginación.
 - 🗄️ H2 para arrancar sin instalar nada y PostgreSQL para lo serio, con el esquema gestionado por **Flyway**.
 - 🔐 **JWT**: para crear o cancelar hace falta token; para consultar, no.
-- 🧪 16 tests, incluidos 10 reservas simultáneas al mismo hueco y pruebas contra un PostgreSQL real.
+- 📖 **Swagger UI** para probarla desde el navegador, sin instalar nada.
+- 🧪 17 tests, incluidos 10 reservas simultáneas al mismo hueco y pruebas contra un PostgreSQL real.
 
 ---
 
@@ -58,6 +59,19 @@ java -jar target/reservas-salas-0.0.1-SNAPSHOT.jar --spring.profiles.active=post
 ---
 
 ## 🧭 Probarlo en 1 minuto
+
+### Desde el navegador (lo más fácil)
+
+Con la API arrancada, abre **http://localhost:8080/swagger-ui.html**:
+
+1. En **Autenticación → POST /api/auth/login**, pulsa *Execute* (en `dev`: `admin` / `admin123`).
+2. Copia el `token` de la respuesta.
+3. Pulsa **Authorize** 🔓 arriba a la derecha y pégalo.
+4. Ya puedes crear salas y reservas, y provocar un 409 reservando dos veces la misma hora.
+
+La especificación OpenAPI en JSON está en `/v3/api-docs`.
+
+### Desde la terminal
 
 ```bash
 # 1. Pide un token (vale 1 hora)
@@ -154,7 +168,6 @@ curl -X POST localhost:8080/api/reservas/1/cancelacion -H "Authorization: Bearer
 
 - Fechas con zona horaria, para oficinas en varios países.
 - Usuarios reales con roles: que solo quien reservó (o un administrador) pueda cancelar, y que el responsable salga del token. *Refresh tokens*.
-- Documentación interactiva con **OpenAPI/Swagger**.
 - Editar salas y reservas, buscar huecos libres y reservas recurrentes.
 - Lo necesario para producción: Actuator, métricas, logs estructurados, Dockerfile y CI con GitHub Actions.
 - Limitar los intentos de login para frenar ataques de fuerza bruta.

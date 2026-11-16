@@ -41,7 +41,7 @@ flowchart LR
 | Repositorio | Hablar con la base de datos | Decidir nada |
 | Entidad | Representar una fila y proteger su estado (`cancelar()`) | Exponerse directamente en la API (para eso están los DTO) |
 
-**Tecnología:** Java 17 · Spring Boot 4.1 (Web MVC, Data JPA, Validation, Security, OAuth2 Resource Server) · Hibernate 7 · Flyway · H2 · PostgreSQL 17 · JUnit 5 · Mockito · Testcontainers.
+**Tecnología:** Java 17 · Spring Boot 4.1 (Web MVC, Data JPA, Validation, Security, OAuth2 Resource Server) · Hibernate 7 · Flyway · H2 · PostgreSQL 17 · springdoc-openapi (Swagger UI) · JUnit 5 · Mockito · Testcontainers.
 
 ---
 
@@ -77,6 +77,7 @@ src/main/java/com/josue/reservas/
 └── comun/                     🧰 Compartido
     ├── ManejadorErrores.java     excepción → respuesta HTTP
     ├── PaginaResponse.java       formato de las páginas
+    ├── OpenApiConfig.java        título de Swagger y botón «Authorize»
     ├── RecursoNoEncontradoException.java   → 404
     ├── DatosInvalidosException.java        → 400
     └── ConflictoException.java             → 409
@@ -264,6 +265,7 @@ Si alguna vez saltara, por ejemplo al escribir con SQL directo, `ManejadorErrore
 | `POST /api/auth/login` | No |
 | `GET /api/**` (todas las consultas) | No |
 | `POST /api/salas`, `POST /api/reservas`, `POST /api/reservas/{id}/cancelacion` | **Sí** |
+| `/swagger-ui.html`, `/v3/api-docs` | No (solo documentación) |
 | `/h2-console/**` | Solo existe en el perfil `dev` |
 | Cualquier otra ruta | Sí (por defecto, todo cerrado) |
 
@@ -438,7 +440,7 @@ Flyway busca en `db/migration` y en `db/vendor/{vendor}`, donde `{vendor}` se su
 
 ## 11. Estrategia de tests
 
-**16 tests**, elegidos para demostrar las reglas de negocio y detectar regresiones, no para inflar la cobertura.
+**17 tests**, elegidos para demostrar las reglas de negocio y detectar regresiones, no para inflar la cobertura.
 
 | Test | Tipo | Base de datos | Qué demuestra |
 |---|---|---|---|
@@ -447,6 +449,7 @@ Flyway busca en `db/migration` y en `db/vendor/{vendor}`, donde `{vendor}` se su
 | `ReservasConcurrentesTest` (1) | Concurrencia | H2 | 10 reservas simultáneas → 1 éxito |
 | `PostgresIntegrationTest` (3) | Integración, con Testcontainers | **PostgreSQL 17** | Migraciones V1 y V2, restricción de exclusión con SQL directo y concurrencia |
 | `ConfiguracionSeguraTest` (1) | Arranque | — | Fuera de `dev`, sin credenciales no arranca |
+| `OpenApiTest` (1) | Integración, con MockMvc | H2 | La documentación es pública, describe el 409 y marca como protegidos solo los endpoints de escritura |
 | `ReservasSalasApplicationTests` (1) | Arranque | H2 | La aplicación levanta y las entidades encajan con las migraciones |
 
 **Criterios que se siguieron:**

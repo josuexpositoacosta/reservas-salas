@@ -42,6 +42,8 @@ public class SeguridadConfig {
                         .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/**").permitAll()
                         .requestMatchers("/h2-console/**", "/error").permitAll()
+                        // Documentación OpenAPI y Swagger UI: públicas, como las consultas
+                        .requestMatchers("/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**").permitAll()
                         .anyRequest().authenticated())
                 // La consola de H2 (sólo desarrollo) se muestra dentro de un iframe del mismo origen
                 .headers(h -> h.frameOptions(f -> f.sameOrigin()))

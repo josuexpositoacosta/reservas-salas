@@ -1,5 +1,8 @@
 package com.josue.reservas.seguridad;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.time.Instant;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -16,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+@Tag(name = "Autenticación")
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
@@ -31,6 +35,10 @@ public class AuthController {
     }
 
     /** Credenciales incorrectas -> AuthenticationException -> 401 (ver ManejadorErrores). */
+    @Operation(summary = "Obtener un token",
+            description = "Copia el token de la respuesta y pégalo en el botón «Authorize» de arriba. En el perfil dev: admin / admin123.")
+    @ApiResponse(responseCode = "200", description = "Token JWT válido durante 1 hora")
+    @ApiResponse(responseCode = "401", description = "Usuario o contraseña incorrectos")
     @PostMapping("/login")
     public TokenResponse login(@Valid @RequestBody LoginRequest datos) {
         Authentication auth = authenticationManager.authenticate(
