@@ -11,7 +11,7 @@ Hecha con **Java 17 y Spring Boot 4**.
 - 🔎 Listado de reservas con filtros por sala, fecha y estado, y paginación.
 - 🗄️ H2 para arrancar sin instalar nada y PostgreSQL para lo serio, con el esquema gestionado por **Flyway**.
 - 🔐 **JWT**: para crear o cancelar hace falta token; para consultar, no.
-- 🧪 13 tests, incluido uno que lanza 10 reservas simultáneas al mismo hueco.
+- 🧪 16 tests, incluidos 10 reservas simultáneas al mismo hueco y pruebas contra un PostgreSQL real.
 
 ---
 
@@ -23,6 +23,8 @@ Solo necesitas **Java 17 o superior**. Maven no hace falta, porque el proyecto t
 ./mvnw spring-boot:run    # arranca en http://localhost:8080 (con H2 en memoria)
 ./mvnw test               # ejecuta los tests
 ```
+
+Los tests de PostgreSQL levantan un contenedor desechable con **Testcontainers**, así que necesitan Docker. Sin Docker, esos 3 tests se saltan y el resto se ejecuta igual.
 
 ### ¿Prefieres PostgreSQL?
 
@@ -124,6 +126,12 @@ curl -X POST localhost:8080/api/reservas/1/cancelacion -H "Authorization: Bearer
 
 **Cinturón y tirantes en PostgreSQL.** Además, una **restricción de exclusión** (`EXCLUDE USING gist`) hace que sea la propia base de datos la que rechace solapamientos, aunque alguien escriba sin pasar por la API. H2 no la soporta, así que esa migración solo se aplica en PostgreSQL (`db/vendor/postgresql`).
 
+`PostgresIntegrationTest` comprueba todo esto sobre un PostgreSQL 17 real:
+- Flyway aplica las dos migraciones.
+- Un solapamiento insertado con SQL directo es rechazado.
+- Las consecutivas, las canceladas y otras salas sí se permiten.
+- Las 10 peticiones simultáneas también se resuelven bien ahí.
+
 ### Otras decisiones
 
 - **Cancelar no borra.** La reserva queda como `CANCELADA`: el histórico se conserva y el hueco se libera. Por eso cancelar es un `POST …/cancelacion` y no un `DELETE`; la reserva sigue existiendo.
@@ -144,7 +152,6 @@ curl -X POST localhost:8080/api/reservas/1/cancelacion -H "Authorization: Bearer
 
 - Fechas con zona horaria, para oficinas en varios países.
 - Usuarios reales con roles: que solo quien reservó (o un administrador) pueda cancelar, y que el responsable salga del token. *Refresh tokens*.
-- Tests contra un PostgreSQL de verdad con **Testcontainers**, para cubrir también la restricción de exclusión.
 - Documentación interactiva con **OpenAPI/Swagger**.
 - Editar salas y reservas, buscar huecos libres y reservas recurrentes.
 - Lo necesario para producción: Actuator, métricas, logs estructurados, Dockerfile y CI con GitHub Actions.
@@ -192,7 +199,7 @@ Con todo funcionando y los tests en verde, no lo di por bueno. Le pedí tres rev
 | Gravedad | Qué pasa | Qué haría |
 |---|---|---|
 | 🔴 Alta | El secreto JWT y las credenciales tenían valores por defecto. Si alguien desplegaba sin configurar nada, cualquiera podría fabricar tokens válidos. | ✅ **Corregido.** Los valores por defecto viven solo en el perfil `dev`; con cualquier otro perfil la aplicación no arranca sin las variables. Lo comprueba `ConfiguracionSeguraTest`. |
-| 🔴 Alta | La restricción `EXCLUDE` de PostgreSQL no la prueba ningún test, porque todos se ejecutan en H2. | Test con Testcontainers sobre PostgreSQL real. |
+| 🔴 Alta | La restricción `EXCLUDE` de PostgreSQL no la probaba ningún test, porque todos se ejecutaban en H2. | ✅ **Corregido.** `PostgresIntegrationTest` usa Testcontainers con PostgreSQL 17: migraciones, restricción y concurrencia. |
 | 🟠 Media | El login no limita los intentos fallidos. | *Rate limiting* por IP y usuario. |
 | 🟠 Media | La consola de H2 quedaba abierta siempre que se usara H2. | ✅ **Corregido** con el mismo cambio: solo se activa en `dev`. |
 | 🟡 Baja | Los tests usan fechas de 2030 y exigen fechas futuras: en 2030 empezarán a fallar. | Calcular las fechas a partir de hoy. |
